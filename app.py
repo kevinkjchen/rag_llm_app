@@ -11,6 +11,7 @@ if os.name == 'posix':
 
 from langchain_openai import ChatOpenAI, AzureChatOpenAI
 from langchain_anthropic import ChatAnthropic
+from langchain_google_genai import ChatGoogleGenerativeAI       #Kevin241231
 from langchain.schema import HumanMessage, AIMessage
 
 from rag_methods import (
@@ -28,6 +29,8 @@ if "AZ_OPENAI_API_KEY" not in os.environ:
         "openai/gpt-4o",
         "openai/gpt-4o-mini",
         "anthropic/claude-3-5-sonnet-20240620",
+        "google/gemini-1.5-flash",
+        "google/gemini-1.5-pro",
     ]
 else:
     MODELS = ["azure-openai/gpt-4o"]
@@ -71,6 +74,10 @@ with st.sidebar:
                 key="openai_api_key",
             )
 
+        default_google_api_key = os.getenv("GOOGLE_API_KEY") if os.getenv("GOOGLE_API_KEY") is not None else ""  # only for development environment, otherwise it should return None
+        with st.popover("🔐 Google"):
+            google_api_key = st.text_input("Introduce your Google API Key (https://aistudio.google.com/app/apikey)", value=default_google_api_key, type="password")
+
         default_anthropic_api_key = os.getenv("ANTHROPIC_API_KEY") if os.getenv("ANTHROPIC_API_KEY") is not None else ""
         with st.popover("🔐 Anthropic"):
             anthropic_api_key = st.text_input(
@@ -78,7 +85,7 @@ with st.sidebar:
                 value=default_anthropic_api_key, 
                 type="password",
                 key="anthropic_api_key",
-            )
+           )
     else:
         openai_api_key, anthropic_api_key = None, None
         st.session_state.openai_api_key = None
@@ -90,7 +97,9 @@ with st.sidebar:
 # Checking if the user has introduced the OpenAI API Key, if not, a warning is displayed
 missing_openai = openai_api_key == "" or openai_api_key is None or "sk-" not in openai_api_key
 missing_anthropic = anthropic_api_key == "" or anthropic_api_key is None
-if missing_openai and missing_anthropic and ("AZ_OPENAI_API_KEY" not in os.environ):
+missing_google = google_api_key == "" or google_api_key is None
+#if missing_openai and missing_anthropic and ("AZ_OPENAI_API_KEY" not in os.environ):
+if missing_openai and missing_anthropic and missing_google and ("AZ_OPENAI_API_KEY" not in os.environ):
     st.write("#")
     st.warning("⬅️ Please introduce an API Key to continue...")
 
@@ -103,6 +112,8 @@ else:
             if "openai" in model and not missing_openai:
                 models.append(model)
             elif "anthropic" in model and not missing_anthropic:
+                models.append(model)
+            elif "google" in model and not missing_google:
                 models.append(model)
             elif "azure-openai" in model:
                 models.append(model)
@@ -158,6 +169,13 @@ else:
             temperature=0.3,
             streaming=True,
         )
+    if model_provider == "google": 
+        llm_stream = ChatGoogleGenerativeAI(
+            api_key=google_api_key,
+            model=st.session_state.model.split("/")[-1],
+            temperature=0.3,
+            streaming=True,
+        )
     elif model_provider == "anthropic":
         llm_stream = ChatAnthropic(
             api_key=anthropic_api_key,
@@ -197,10 +215,11 @@ else:
                 st.write_stream(stream_llm_rag_response(llm_stream, messages))
 
 
-with st.sidebar:
-    st.divider()
-    st.video("https://youtu.be/abMwFViFFhI")
-    st.write("📋[Medium Blog](https://medium.com/@enricdomingo/program-a-rag-llm-chat-app-with-langchain-streamlit-o1-gtp-4o-and-claude-3-5-529f0f164a5e)")
-    st.write("📋[GitHub Repo](https://github.com/enricd/rag_llm_app)")
+# with st.sidebar:
+#     st.divider()
+#     st.video("https://youtu.be/abMwFViFFhI")
+#     st.write("📋[Medium Blog](https://medium.com/@enricdomingo/program-a-rag-llm-chat-app-with-langchain-streamlit-o1-gtp-4o-and-claude-3-5-529f0f164a5e)")
+#     st.write("📋[GitHub Repo](https://github.com/enricd/rag_llm_app)")
+
 
     

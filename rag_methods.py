@@ -13,6 +13,7 @@ from langchain_community.document_loaders import (
 from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, AzureOpenAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings             #Kevin241231
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
@@ -100,7 +101,15 @@ def load_url_to_db():
 
 def initialize_vector_db(docs):
     if "AZ_OPENAI_API_KEY" not in os.environ:
-        embedding = OpenAIEmbeddings(api_key=st.session_state.openai_api_key)
+        #embedding = OpenAIEmbeddings(api_key=st.session_state.openai_api_key)
+        #Kevin241201
+        model_name = "sentence-transformers/all-MiniLM-L6-v2"
+        model_kwargs = {'device': 'cpu'}
+        embedding = HuggingFaceEmbeddings(model_name=model_name,
+                                        model_kwargs=model_kwargs)
+
+
+
     else:
         embedding = AzureOpenAIEmbeddings(
             api_key=os.getenv("AZ_OPENAI_API_KEY"), 
