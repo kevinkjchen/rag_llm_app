@@ -82,7 +82,7 @@ def load_url_to_db():
         url = st.session_state.rag_url
         docs = []
         if url not in st.session_state.rag_sources:
-            if len(st.session_state.rag_sources) < 10:
+            if len(st.session_state.rag_sources) < DB_DOCS_LIMIT: #10
                 try:
                     loader = WebBaseLoader(url)
                     docs.extend(loader.load())
