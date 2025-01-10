@@ -3,6 +3,13 @@ import os
 import dotenv
 import uuid
 
+#Kevin250110
+import json
+def save_chat():
+    if "messages" in st.session_state and len(st.session_state.messages) > 0:
+        with open("chat.json", "w") as file:
+            json.dump(st.session_state.messages, file)
+
 # check if it's linux so it works on Streamlit Cloud
 if os.name == 'posix':
     __import__('pysqlite3')
@@ -29,8 +36,9 @@ if "AZ_OPENAI_API_KEY" not in os.environ:
         "openai/gpt-4o",
         "openai/gpt-4o-mini",
         "anthropic/claude-3-5-sonnet-20240620",
-        "google/gemini-1.5-flash",
+        #"google/gemini-1.5-flash",
         "google/gemini-1.5-pro",
+        "google/gemini-2.0-flash-exp",
     ]
 else:
     MODELS = ["azure-openai/gpt-4o"]
@@ -45,7 +53,7 @@ st.set_page_config(
 
 
 # --- Header ---
-st.html("""<h2 style="text-align: center;">📚🔍 <i> Do your LLM even RAG bro? </i> 🤖💬</h2>""")
+st.html("""<h2 style="text-align: center;">📚🔍 <i> LLM Chatbot with RAG </i> 🤖💬</h2>""")
 
 
 # --- Initial Setup ---
@@ -126,19 +134,21 @@ else:
 
         cols0 = st.columns(2)
         with cols0[0]:
-            is_vector_db_loaded = ("vector_db" in st.session_state and st.session_state.vector_db is not None)
-            st.toggle(
-                "Use RAG", 
-                value=is_vector_db_loaded, 
-                key="use_rag", 
-                disabled=not is_vector_db_loaded,
-            )
+            st.button("Save Chat", on_click=save_chat) #Kevin250110
 
         with cols0[1]:
-            st.button("Clear Chat", on_click=lambda: st.session_state.messages.clear(), type="primary")
+            st.button("Clear Chat", on_click=lambda: st.session_state.messages.clear(), type="primary")        
+
+        is_vector_db_loaded = ("vector_db" in st.session_state and st.session_state.vector_db is not None)
+        st.toggle(
+            "Use RAG", 
+            value=is_vector_db_loaded, 
+            key="use_rag", 
+            disabled=not is_vector_db_loaded,
+        )
 
         st.header("RAG Sources:")
-            
+        
         # File upload input for RAG with documents
         st.file_uploader(
             "📄 Upload a document", 
