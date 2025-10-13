@@ -39,6 +39,7 @@ if "AZ_OPENAI_API_KEY" not in os.environ:
         #"google/gemini-1.5-flash",
         "google/gemini-1.5-pro",
         "google/gemini-2.0-flash-exp",
+        "local/lm-studio",  #Kevin251011         
     ]
 else:
     MODELS = ["azure-openai/gpt-4o"]
@@ -94,8 +95,28 @@ with st.sidebar:
                 type="password",
                 key="anthropic_api_key",
            )
+           
+        #Kevin251011 新增 LM Studio 設定
+        default_lm_studio_url = os.getenv("LM_STUDIO_URL") if os.getenv("LM_STUDIO_URL") is not None else "http://localhost:1234/v1"
+        default_lm_studio_model = os.getenv("LM_STUDIO_MODEL") if os.getenv("LM_STUDIO_MODEL") is not None else "local-model"
+        
+        with st.popover("💻 LM Studio (Local)"):
+            lm_studio_url = st.text_input(
+                "LM Studio API URL", 
+                value=default_lm_studio_url,
+                key="lm_studio_url",
+                help="預設為 http://localhost:1234/v1"
+            )
+            lm_studio_model = st.text_input(
+                "Model Name (optional)",
+                value=default_lm_studio_model,
+                key="lm_studio_model",
+                help="如果 LM Studio 需要指定模型名稱"
+            )           
+           
     else:
-        openai_api_key, anthropic_api_key = None, None
+        #openai_api_key, anthropic_api_key = None, None
+        openai_api_key, anthropic_api_key, lm_studio_url = None, None, None 
         st.session_state.openai_api_key = None
         az_openai_api_key = os.getenv("AZ_OPENAI_API_KEY")
         st.session_state.az_openai_api_key = az_openai_api_key
@@ -106,10 +127,13 @@ with st.sidebar:
 missing_openai = openai_api_key == "" or openai_api_key is None or "sk-" not in openai_api_key
 missing_anthropic = anthropic_api_key == "" or anthropic_api_key is None
 missing_google = google_api_key == "" or google_api_key is None
+has_local_model = "lm_studio_url" in st.session_state and st.session_state.lm_studio_url 
+
+
 #if missing_openai and missing_anthropic and ("AZ_OPENAI_API_KEY" not in os.environ):
-if missing_openai and missing_anthropic and missing_google and ("AZ_OPENAI_API_KEY" not in os.environ):
+if missing_openai and missing_anthropic and ("AZ_OPENAI_API_KEY" not in os.environ) and not has_local_model:
     st.write("#")
-    st.warning("⬅️ Please introduce an API Key to continue...")
+    st.warning("⬅️ Please introduce an API Key or configure LM Studio to continue...")
 
 else:
     # Sidebar
@@ -124,6 +148,8 @@ else:
             elif "google" in model and not missing_google:
                 models.append(model)
             elif "azure-openai" in model:
+                models.append(model)
+            elif "local" in model and has_local_model:
                 models.append(model)
 
         st.selectbox(
@@ -203,6 +229,18 @@ else:
             temperature=0.3,
             streaming=True,
         )
+        
+    elif model_provider == "local":
+        # 使用 LM Studio 本地模型
+        llm_stream = ChatOpenAI(
+            base_url=st.session_state.lm_studio_url,
+            api_key="lm-studio",  # LM Studio 不需要 API key
+            model_name=st.session_state.lm_studio_model,
+            temperature=0.3,
+            streaming=True,
+        )        
+        
+        
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
